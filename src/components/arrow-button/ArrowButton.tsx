@@ -1,7 +1,6 @@
 import arrow from 'src/images/arrow.svg';
 import styles from './ArrowButton.module.scss';
 import classNames from 'classnames';
-// import { useState } from 'react';
 
 /** Функция для обработки открытия/закрытия формы */
 export type OnClick = () => void;
