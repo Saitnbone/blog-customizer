@@ -12,86 +12,106 @@ import {
 	defaultArticleState,
 	OptionType,
 } from 'src/constants/articleProps';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, CSSProperties } from 'react';
 import classNames from 'classnames';
-
 import styles from './ArticleParamsForm.module.scss';
 
-export type FormProps = {
-	onSubmit: (params: {
-		fontFamily: OptionType;
-		fontSize: OptionType;
-		fontColor: OptionType;
-		backgroundColor: OptionType;
-		contentWidth: OptionType;
-	}) => void;
-	onReset: () => void;
+type ParamsFormProps = {
+	onSettingsChange: (settings: CustomCSSProperties) => void;
 };
 
+// Интерфейс для настройки стандартных CSSProperties
+export interface CustomCSSProperties extends CSSProperties {
+	'--font-family': string;
+	'--font-size': string;
+	'--font-color': string;
+	'--container-width': string;
+	'--bg-color': string;
+}
+
 // Компонент для выдвигающейся формы с кнопкой
-export const ArticleParamsForm = ({ onSubmit, onReset }: FormProps) => {
-	const [isOpen, setIsOpen] = useState(false);
+export const ArticleParamsForm = ({ onSettingsChange }: ParamsFormProps) => {
+	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [articleParams, setArticleParams] = useState({
+		fontFamily: defaultArticleState.fontFamilyOption,
+		fontSize: defaultArticleState.fontSizeOption,
+		fontColor: defaultArticleState.fontColor,
+		backgroundColor: defaultArticleState.backgroundColor,
+		contentWidth: defaultArticleState.contentWidth,
+	});
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const handleClick = () => {
-		setIsOpen((prevState) => !prevState);
+		setIsMenuOpen((prevState) => !prevState);
 	};
 
 	const containerStyle = classNames(styles.container, {
-		[styles.container_open]: isOpen,
+		[styles.container_open]: isMenuOpen,
 	});
 
 	useEffect(() => {
+		if (!isMenuOpen) {
+			return;
+		}
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
 				containerRef.current &&
 				!containerRef.current.contains(event.target as Node)
 			) {
-				setIsOpen(false);
+				setIsMenuOpen(false);
 			}
 		};
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => {
 			document.removeEventListener('mousedown', handleClickOutside);
 		};
-	}, []);
+	}, [isMenuOpen]);
 
-	const updateArticleParams = (key: string, value: OptionType) => {
-		setArticleParams((prevParams) => ({ ...prevParams, [key]: value }));
+	const updateArticleParams = (
+		key: keyof typeof articleParams,
+		value: OptionType
+	) => {
+		const newParams = { ...articleParams, [key]: value };
+		setArticleParams(newParams);
 	};
-
-	//
-	const [articleParams, setArticleParams] = useState({
-		fontFamily: defaultArticleState.fontFamilyOption,
-		fontSize: defaultArticleState.fontSizeOption,
-		fontColor: defaultArticleState.fontColor,
-		backgroundColor: defaultArticleState.fontColor,
-		contentWidth: defaultArticleState.contentWidth,
-	});
 
 	// Функция отправки данных для перерендеринга
 	const handleSubmitButton = (event: React.FormEvent) => {
 		event.preventDefault();
-		onSubmit(articleParams);
+		onSettingsChange({
+			'--font-family': articleParams.fontFamily.value,
+			'--font-size': articleParams.fontSize.value,
+			'--font-color': articleParams.fontColor.value,
+			'--container-width': articleParams.contentWidth.value,
+			'--bg-color': articleParams.backgroundColor.value,
+		});
 	};
 
 	// Функция очистки полей формы
 	const handleResetButton = () => {
-		setArticleParams({
+		const resetParams = {
 			fontFamily: defaultArticleState.fontFamilyOption,
 			fontSize: defaultArticleState.fontSizeOption,
 			fontColor: defaultArticleState.fontColor,
 			backgroundColor: defaultArticleState.backgroundColor,
 			contentWidth: defaultArticleState.contentWidth,
+		};
+		setArticleParams(resetParams);
+		onSettingsChange({
+			'--font-family': resetParams.fontFamily.value,
+			'--font-size': resetParams.fontSize.value,
+			'--font-color': resetParams.fontColor.value,
+			'--container-width': resetParams.contentWidth.value,
+			'--bg-color': resetParams.backgroundColor.value,
 		});
-		onReset();
 	};
 
 	return (
 		<>
-			<ArrowButton isOpen={isOpen} onClick={handleClick} />
+			<ArrowButton isOpen={isMenuOpen} onClick={handleClick} />
 			<aside className={containerStyle} ref={containerRef}>
 				<form className={styles.form} onSubmit={handleSubmitButton}>
+					<h2 className={styles.title}>Задайте параметры</h2>
 					<Select
 						title='Шрифт'
 						selected={articleParams.fontFamily}
